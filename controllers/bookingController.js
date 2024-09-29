@@ -1,9 +1,19 @@
 const Booking = require('../models/bookingModel');
+const Customer = require('../models/customerModel'); // Import the Customer model
 
 // Create a new booking
 exports.createBooking = async (req, res) => {
     try {
+        // Create the booking
         const booking = await Booking.create(req.body);
+
+        // Update the customer's booking history
+        await Customer.findByIdAndUpdate(
+            req.body.customer, // Assuming the customer ID is passed in the request body
+            { $push: { booking_history: booking._id } }, // Add the new booking ID to the customer's booking history
+            { new: true }
+        );
+
         res.status(201).json(booking);
     } catch (error) {
         res.status(400).json({ message: error.message });

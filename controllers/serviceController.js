@@ -1,9 +1,19 @@
+const Vendor = require('../models/vendorModel'); // Ensure Vendor model is imported
 const Service = require('../models/serviceModel');
 
 // Create a new service
 exports.createService = async (req, res) => {
     try {
+        // Create the service
         const service = await Service.create(req.body);
+
+        // Update the vendor's services array
+        await Vendor.findByIdAndUpdate(
+            req.body.vendor, // Assuming the vendor ID is passed in the request body
+            { $push: { services: service._id } }, // Add the new service ID to the vendor's services array
+            { new: true }
+        );
+
         res.status(201).json(service);
     } catch (error) {
         res.status(400).json({ message: error.message });
