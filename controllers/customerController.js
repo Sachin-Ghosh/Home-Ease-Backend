@@ -1,4 +1,18 @@
 const Customer = require('../models/customerModel');
+const multer = require('multer');
+const path = require('path');
+
+// Set up multer for file uploads
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        cb(null, 'uploads/'); // Specify the upload directory
+    },
+    filename: (req, file, cb) => {
+        cb(null, `${Date.now()}-${file.originalname}`); // Create a unique filename
+    },
+});
+
+const upload = multer({ storage });
 
 // Create a new customer
 exports.createCustomer = async (req, res) => {
@@ -73,5 +87,32 @@ exports.filterCustomersByAddress = async (req, res) => {
         res.status(200).json(customers);
     } catch (error) {
         res.status(400).json({ message: error.message });
+    }
+};
+exports.getCustomerByUserId = async (req, res) => {
+    try {
+        const customer = await Customer.findOne({ userId: req.params.userId }).populate('userId', 'name email');
+        if (!customer) return res.status(404).json({ message: 'Customer not found' });
+        res.status(200).json(customer);
+    } catch (error) {
+        res.status(400).json({ message: error.message });
+    }
+};
+//  Upload profile picture
+exports.uploadProfilePicture = async (req, res) => {
+    try {
+        const customerId = req.body.customerId; // Get customer ID from request body
+        const imageUrl = req.file.path; // Get the uploaded file path
+
+        // Update the customer with the new profile picture URL
+        const customer = await Customer.findByIdAndUpdate(customerId, { profilePicture: imageUrl }, { new: true });
+
+        if (!customer) {
+            return res.status(404).json({ message: 'Customer not found' });
+        }
+
+        res.status(200).json({ message: 'Profile picture uploaded successfully', imageUrl });
+    } catch (error) {
+        res.status(500).json({ message: 'Error uploading profile picture', error: error.message });
     }
 };

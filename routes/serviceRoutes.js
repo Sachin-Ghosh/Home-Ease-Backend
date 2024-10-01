@@ -10,4 +10,11 @@ router.put('/:id', serviceController.updateService);
 router.delete('/:id', serviceController.deleteService);
 router.get('/category', serviceController.filterServicesByCategory); // Filter services by category
 
+// Category routes
+router.post('/category', serviceController.createCategory); // Create a new category
+router.get('/category', serviceController.getAllCategories); // Get all categories
+router.get('/category/:id', serviceController.getCategoryById); // Get a category by ID
+router.post('/category/subcategory', serviceController.addSubCategory); // Add a subcategory to a category
+router.get('/subcategory/:id', serviceController.getSubCategoryById); // Get a subcategory by ID
+
 module.exports = router;

@@ -10,6 +10,7 @@ const CustomerSchema = new mongoose.Schema({
     lng: { type: Number },
   },
   booking_history: [{ type: mongoose.Schema.Types.ObjectId, ref: "Booking" }],
+  profilePicture: { type: String }
 });
 
 
