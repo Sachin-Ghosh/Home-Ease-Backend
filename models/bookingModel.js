@@ -2,7 +2,7 @@ const mongoose = require("mongoose");
 
 const BookingSchema = new mongoose.Schema({
   customer: { type: mongoose.Schema.Types.ObjectId, ref: "Customer", required: true },
-  service: { type: mongoose.Schema.Types.ObjectId, ref: "Service", required: true },
+  service: [{ type: mongoose.Schema.Types.ObjectId, ref: "Service", required: true }],
   vendor: { type: mongoose.Schema.Types.ObjectId, ref: "Vendor", required: true },
   scheduleId: { type: mongoose.Schema.Types.ObjectId, ref: "Schedule", required: true },
   slot: {
