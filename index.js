@@ -17,6 +17,8 @@ const serviceRoutes = require('./routes/serviceRoutes');
 const reviewRoutes = require('./routes/reviewRoutes');
 const chatRoutes = require('./routes/chatRoutes');
 const customerRoutes = require('./routes/customerRoutes'); // Import customer routes
+const scheduleRoutes = require('./routes/scheduleRoutes'); // Import schedule routes
+
 
 
 const authenticateToken = require('./middlewares/authMiddleware');
@@ -49,7 +51,7 @@ app.use('/api/services', serviceRoutes);
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/chats', chatRoutes);
 app.use('/api/customers', customerRoutes); // Use customer routes
-
+app.use('/api/schedules', scheduleRoutes); // Use schedule routes
 // Serve static files from the uploads directory
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
