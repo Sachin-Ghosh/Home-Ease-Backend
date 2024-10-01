@@ -77,10 +77,20 @@ exports.deleteService = async (req, res) => {
     }
 };
 
-// Filter services by category
-exports.filterServicesByCategory = async (req, res) => {
+// Filter services by category and subcategory
+exports.filterServices = async (req, res) => {
     try {
-        const services = await Service.find({ category: req.query.category }).populate('vendor');
+        const { category, subcategory, minPrice, maxPrice, vendor } = req.query;
+
+        // Build the filter object
+        const filter = {};
+        if (category) filter.category = category; // Filter by category
+        if (subcategory) filter.subcategory = subcategory; // Filter by subcategory
+        if (minPrice) filter.price = { $gte: minPrice }; // Filter by minimum price
+        if (maxPrice) filter.price = { $lte: maxPrice }; // Filter by maximum price
+        if (vendor) filter.vendor = vendor; // Filter by vendor
+
+        const services = await Service.find(filter).populate('vendor category'); // Populate category
         res.status(200).json(services);
     } catch (error) {
         res.status(400).json({ message: error.message });
