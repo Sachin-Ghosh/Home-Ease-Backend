@@ -62,3 +62,28 @@ exports.getVendorsByAvailability = async (req, res) => {
         res.status(400).json({ message: error.message });
     }
 };
+
+// Get nearby vendors by category
+   // Get nearby vendors by category
+   exports.getNearbyVendors = async (req, res) => {
+    const { lat, lng, categoryId } = req.query; // Get latitude, longitude, and category from query
+
+    try {
+        const vendors = await Vendor.find({
+            services: categoryId, // Filter by category
+            location: {
+                $near: {
+                    $geometry: {
+                        type: "Point",
+                        coordinates: [parseFloat(lng), parseFloat(lat)], // Ensure these are numbers
+                    },
+                    $maxDistance: 5000 // Distance in meters (e.g., 5000 meters = 5 km)
+                }
+            }
+        }).populate('userId services');
+
+        res.status(200).json(vendors);
+    } catch (error) {
+        res.status(400).json({ message: error.message });
+    }
+};

@@ -13,6 +13,9 @@ const CustomerSchema = new mongoose.Schema({
   profilePicture: { type: String }
 });
 
+CustomerSchema.methods.populateData = function() {
+    return this.populate('booking_history').populate('profilePicture'); // Add other fields as necessary
+};
 
 const Customer = mongoose.model('Customer', CustomerSchema);
 module.exports = Customer;

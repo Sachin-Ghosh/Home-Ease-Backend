@@ -34,6 +34,30 @@ exports.createService = async (req, res) => {
     }
 };
 
+
+// Create a new service
+// exports.createService = async (req, res) => {
+//     try {
+//         const { vendor, ...serviceData } = req.body; // Extract vendor ID from request body
+
+//         // Check if vendor exists
+//         const vendorExists = await Vendor.findById(vendor);
+//         if (!vendorExists) {
+//             return res.status(404).json({ message: 'Vendor not found' });
+//         }
+
+//         const service = await Service.create(serviceData); // Create the service
+
+//         // Update the vendor's services array
+//         const updatedVendor = await Vendor.findByIdAndUpdate(vendor, { $addToSet: { services: service._id } }, { new: true });
+//         console.log('Updated Vendor:', updatedVendor); // Log the updated vendor
+
+//         res.status(201).json(service);
+//     } catch (error) {
+//         res.status(400).json({ message: error.message });
+//     }
+// };
+
 // Get all services
 exports.getAllServices = async (req, res) => {
     try {
@@ -98,14 +122,23 @@ exports.filterServices = async (req, res) => {
 };
 
 // Create a new category
-exports.createCategory = upload.single('image'), async (req, res) => {
+// exports.createCategory = upload.single('image'), async (req, res) => {
+//     try {
+//         const categoryData = {
+//             name: req.body.name,
+//             description: req.body.description,
+//             image: req.file.path, // Get the uploaded file path
+//         };
+//         const category = await Category.create(categoryData);
+//         res.status(201).json(category);
+//     } catch (error) {
+//         res.status(400).json({ message: error.message });
+//     }
+// };
+exports.createCategory = async (req, res) => {
     try {
-        const categoryData = {
-            name: req.body.name,
-            description: req.body.description,
-            image: req.file.path, // Get the uploaded file path
-        };
-        const category = await Category.create(categoryData);
+        const { name, description, image } = req.body;
+        const category = await Category.create({ name, description, image });
         res.status(201).json(category);
     } catch (error) {
         res.status(400).json({ message: error.message });
@@ -145,21 +178,46 @@ exports.getSubCategoryById = async (req, res) => {
 };
 
 // Add a subcategory to a category
-exports.addSubCategory = upload.single('image'), async (req, res) => {
+// exports.addSubCategory = upload.single('image'), async (req, res) => {
+//     try {
+//         const { categoryId, name, description } = req.body;
+//         const subCategoryData = {
+//             name,
+//             description,
+//             image: req.file.path, // Get the uploaded file path for subcategory image
+//         };
+//         const category = await Category.findByIdAndUpdate(
+//             categoryId,
+//             { $push: { subCategories: subCategoryData } },
+//             { new: true }
+//         );
+//         if (!category) return res.status(404).json({ message: 'Category not found' });
+//         res.status(200).json(category);
+//     } catch (error) {
+//         res.status(400).json({ message: error.message });
+//     }
+// };
+   // In controllers/serviceController.js
+   exports.addSubCategory = async (req, res) => {
     try {
-        const { categoryId, name, description } = req.body;
+        const { categoryId, name, description, image } = req.body;
         const subCategoryData = {
             name,
             description,
-            image: req.file.path, // Get the uploaded file path for subcategory image
+            image,
         };
+
         const category = await Category.findByIdAndUpdate(
             categoryId,
             { $push: { subCategories: subCategoryData } },
             { new: true }
         );
-        if (!category) return res.status(404).json({ message: 'Category not found' });
-        res.status(200).json(category);
+
+        if (!category) {
+            return res.status(404).json({ message: 'Category not found' });
+        }
+
+        res.status(201).json(category);
     } catch (error) {
         res.status(400).json({ message: error.message });
     }

@@ -8,35 +8,71 @@ const generateToken = (id) => {
     });
 };
 
-// Create user
-exports.createUser = async (req, res) => {
-    const { name, email, password, role } = req.body;
+// // Create user
+// exports.createUser = async (req, res) => {
+//     const { name, email, password, role } = req.body;
+
+//     try {
+//         const userExists = await User.findOne({ email });
+
+//         if (userExists) {
+//             return res.status(400).json({ message: 'User already exists' });
+//         }
+
+//         const user = await User.create({
+//             name,
+//             email,
+//             password,
+//             role,
+//         });
+
+//         if (user) {
+//             res.status(201).json({
+//                 _id: user._id,
+//                 name: user.name,
+//                 email: user.email,
+//                 role: user.role,
+//                 token: generateToken(user._id),
+//             });
+//         } else {
+//             res.status(400).json({ message: 'Invalid user data' });
+//         }
+//     } catch (error) {
+//         res.status(500).json({ message: 'Server error', error: error.message });
+//     }
+// };
+   // Create user
+   exports.createUser = async (req, res) => {
+    const users = req.body; // Expecting an array of users
 
     try {
-        const userExists = await User.findOne({ email });
+        const createdUsers = [];
+        for (const userData of users) {
+            const { name, email, password, role } = userData;
 
-        if (userExists) {
-            return res.status(400).json({ message: 'User already exists' });
-        }
+            const userExists = await User.findOne({ email });
 
-        const user = await User.create({
-            name,
-            email,
-            password,
-            role,
-        });
+            if (userExists) {
+                return res.status(400).json({ message: 'User already exists' });
+            }
 
-        if (user) {
-            res.status(201).json({
+            const user = await User.create({
+                name,
+                email,
+                password,
+                role,
+            });
+
+            createdUsers.push({
                 _id: user._id,
                 name: user.name,
                 email: user.email,
                 role: user.role,
                 token: generateToken(user._id),
             });
-        } else {
-            res.status(400).json({ message: 'Invalid user data' });
         }
+
+        res.status(201).json(createdUsers);
     } catch (error) {
         res.status(500).json({ message: 'Server error', error: error.message });
     }

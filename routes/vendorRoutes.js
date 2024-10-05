@@ -5,9 +5,10 @@ const vendorController = require('../controllers/vendorController');
 // Vendor routes
 router.post('/', vendorController.createVendor);
 router.get('/', vendorController.getAllVendors);
-router.get('/:id', vendorController.getVendorById);
+router.get('/available', vendorController.getVendorsByAvailability); // Get available vendors
+router.get('/nearby', vendorController.getNearbyVendors); // Get nearby vendors
+router.get('/:id', vendorController.getVendorById); // Get vendor by ID
 router.put('/:id', vendorController.updateVendor);
 router.delete('/:id', vendorController.deleteVendor);
-router.get('/available', vendorController.getVendorsByAvailability); // Get available vendors
 
 module.exports = router;
