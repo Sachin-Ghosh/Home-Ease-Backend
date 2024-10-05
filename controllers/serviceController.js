@@ -147,15 +147,37 @@ exports.filterServices = async (req, res) => {
 //         res.status(400).json({ message: error.message });
 //     }
 // };
-exports.createCategory = async (req, res) => {
+exports.createCategory = upload.single('image'), async (req, res) => {
     try {
-        const { name, description, image } = req.body;
-        const category = await Category.create({ name, description, image });
+        // Log request body to see if fields are missing
+        console.log("Request Body:", req.body);
+
+        // Check if required fields are present
+        if (!req.body.name || !req.body.description) {
+            return res.status(400).json({ message: 'Name and Description are required fields.' });
+        }
+
+        const categoryData = {
+            name: req.body.name,
+            description: req.body.description,
+            image: req.file ? req.file.path : undefined, // Get the uploaded file path
+        };
+        const category = await Category.create(categoryData);
         res.status(201).json(category);
     } catch (error) {
         res.status(400).json({ message: error.message });
     }
 };
+
+// exports.createCategory = async (req, res) => {
+//     try {
+//         const { name, description, image } = req.body;
+//         const category = await Category.create({ name, description, image });
+//         res.status(201).json(category);
+//     } catch (error) {
+//         res.status(400).json({ message: error.message });
+//     }
+// };
 
 // Get all categories
 exports.getAllCategories = async (req, res) => {
