@@ -1,4 +1,5 @@
 const Customer = require('../models/customerModel');
+const User = require('../models/userModel');
 const multer = require('multer');
 const path = require('path');
 

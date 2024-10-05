@@ -20,9 +20,9 @@ router.get('/', customerController.getAllCustomers); // Get all customers
 router.get('/:id', customerController.getCustomerById); // Get a customer by ID
 router.put('/:id', customerController.updateCustomer); // Update a customer
 router.delete('/:id', customerController.deleteCustomer); // Delete a customer
-router.get('/profile', customerController.getProfile); // Get customer profile
-router.get('/filter', customerController.filterCustomersByAddress); // Filter customers by address
-router.get('/user/:userId', customerController.getCustomerByUserId); // Get a customer by user ID
+router.get('/customer/profile', customerController.getProfile); // Get customer profile
+router.get('/customer/filter', customerController.filterCustomersByAddress); // Filter customers by address
+router.get('/customer/user/:userId', customerController.getCustomerByUserId); // Get a customer by user ID
 router.post('/upload-profile-pic', upload.single('profilePicture'), customerController.uploadProfilePicture); // Upload profile picture
 
 module.exports = router;
