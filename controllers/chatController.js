@@ -27,8 +27,16 @@ exports.addMessageToChat = async (req, res) => {
         const chat = await Chat.findById(req.params.id); // Find chat by ID
         if (!chat) return res.status(404).json({ message: 'Chat not found' });
         
+        // Create a new message object with optional fields
+        const newMessage = {
+            sender: req.body.sender,
+            message: req.body.message,
+            imageUrl: req.body.imageUrl || null, // Handle optional image URL
+            location: req.body.location || null, // Handle optional location
+        };
+
         // Push the new message to the messages array
-        chat.messages.push(req.body); // Add the message from the request body
+        chat.messages.push(newMessage); // Add the message from the request body
         await chat.save(); // Save the updated chat
         
         res.status(200).json(chat); // Return the updated chat
