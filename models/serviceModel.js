@@ -4,10 +4,11 @@ const ServiceSchema = new mongoose.Schema({
   name: { type: String, required: true },
   description: { type: String, required: true },
   category: { type: mongoose.Schema.Types.ObjectId, ref: "Category", required: true },
+  subcategory: { type: mongoose.Schema.Types.ObjectId }, // Reference to subcategory ID
   price: { type: Number, required: true },
   vendor: { type: mongoose.Schema.Types.ObjectId, ref: "Vendor" },
-  availability: { type: Boolean, default: true }, // New field for service availability
-  photos: [{ type: String }], // New field for service photos (array of URLs)
+  availability: { type: Boolean, default: true },
+  photos: [{ type: String }],
   createdAt: { type: Date, default: Date.now },
 });
 
