@@ -1,7 +1,7 @@
 const Vendor = require('../models/vendorModel'); // Ensure Vendor model is imported
 const Service = require('../models/serviceModel');
 const Category = require('../models/categoryModel'); // Import Category model
-const multer = require('    multer');
+const multer = require('multer');
 
 // Set up multer for file uploads
 const storage = multer.diskStorage({
