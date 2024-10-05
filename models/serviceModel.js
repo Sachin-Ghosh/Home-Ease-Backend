@@ -7,7 +7,6 @@ const ServiceSchema = new mongoose.Schema({
   subcategory: { type: mongoose.Schema.Types.ObjectId }, // Reference to subcategory ID
   price: { type: Number, required: true },
   vendor: { type: mongoose.Schema.Types.ObjectId, ref: "Vendor" },
-  availability: { type: Boolean, default: true },
   photos: [{ type: String }],
   createdAt: { type: Date, default: Date.now },
 });
