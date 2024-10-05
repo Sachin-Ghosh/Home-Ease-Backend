@@ -1,6 +1,7 @@
 const Booking = require('../models/bookingModel');
 const Customer = require('../models/customerModel'); // Import the Customer model
 const Vendor = require('../models/vendorModel'); // Import the Vendor model
+const Service = require('../models/serviceModel'); // Import the Service model
 
 // Create a new booking
 exports.createBooking = async (req, res) => {
@@ -104,18 +105,71 @@ exports.getBookingsByVendorId = async (req, res) => {
 
 // Filter bookings based on status and date
 exports.filterBookings = async (req, res) => {
-    const { status, startDate, endDate } = req.query;
+    const { status, startDate, endDate, customerName, customerId, vendorName, vendorId, serviceId, serviceName, serviceCategory, serviceSubCategory, scheduleId, slot, payment_status } = req.query;
 
+    // Build a dynamic filter object
     const filter = {};
+
+    // Filtering by status
     if (status) filter.status = status;
+
+    // Filtering by payment status
+    if (payment_status) filter.payment_status = payment_status;
+
+    // Date range filter
     if (startDate && endDate) {
         filter.createdAt = { $gte: new Date(startDate), $lte: new Date(endDate) };
     }
 
+    // Filter by Customer ID
+    if (customerId) filter.customer = customerId;
+
+    // Filter by Vendor ID
+    if (vendorId) filter.vendor = vendorId;
+
+    // Filter by Schedule ID
+    if (scheduleId) filter.schedule = scheduleId;
+
+    // Filter by slot timings
+    if (slot) {
+        const { startTime, endTime } = JSON.parse(slot); // Assuming `slot` is passed as a JSON string like {"startTime":"10:00","endTime":"11:00"}
+        filter['slot.startTime'] = startTime;
+        filter['slot.endTime'] = endTime;
+    }
+
+    // Filter by Service ID
+    if (serviceId) filter.service = serviceId;
+
     try {
-        const bookings = await Booking.find(filter).populate('customer service vendor');
-        res.status(200).json(bookings);
+        // Apply additional text-based filters using aggregation
+        const bookings = await Booking.find(filter)
+            .populate({
+                path: 'customer',
+                match: customerName ? { name: new RegExp(customerName, 'i') } : {}, // Filter by customer name
+            })
+            .populate({
+                path: 'vendor',
+                match: vendorName ? { name: new RegExp(vendorName, 'i') } : {}, // Filter by vendor name
+            })
+            .populate({
+                path: 'service',
+                match: {
+                    ...(serviceName ? { name: new RegExp(serviceName, 'i') } : {}),
+                    ...(serviceCategory ? { category: new RegExp(serviceCategory, 'i') } : {}),
+                    ...(serviceSubCategory ? { subCategory: new RegExp(serviceSubCategory, 'i') } : {}),
+                },
+            });
+
+        // Filter out bookings where populates did not match (e.g., wrong names)
+        const filteredBookings = bookings.filter(
+            (booking) =>
+                (!customerName || (booking.customer && booking.customer.name)) &&
+                (!vendorName || (booking.vendor && booking.vendor.name)) &&
+                (!serviceName || (booking.service && booking.service.length > 0))
+        );
+
+        res.status(200).json(filteredBookings);
     } catch (error) {
         res.status(400).json({ message: error.message });
     }
-}; 
+};
