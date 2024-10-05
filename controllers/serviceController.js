@@ -18,8 +18,13 @@ const upload = multer({ storage });
 // Create a new service
 exports.createService = async (req, res) => {
     try {
+        const serviceData = {
+            ...req.body,
+            photos: req.body.photos || [], // Handle photos array
+        };
+
         // Create the service
-        const service = await Service.create(req.body);
+        const service = await Service.create(serviceData);
 
         // Update the vendor's services array
         await Vendor.findByIdAndUpdate(
@@ -58,10 +63,12 @@ exports.createService = async (req, res) => {
 //     }
 // };
 
-// Get all services
+// Get all services with populated data
 exports.getAllServices = async (req, res) => {
     try {
-        const services = await Service.find().populate('vendor category'); // Populate category
+        const services = await Service.find()
+            .populate('vendor') // Populate vendor details
+            .populate('category'); // Populate category details
         res.status(200).json(services);
     } catch (error) {
         res.status(400).json({ message: error.message });
@@ -71,7 +78,9 @@ exports.getAllServices = async (req, res) => {
 // Get a service by ID
 exports.getServiceById = async (req, res) => {
     try {
-        const service = await Service.findById(req.params.id).populate('vendor category'); // Populate category
+        const service = await Service.findById(req.params.id)
+            .populate('vendor') // Populate vendor details
+            .populate('category'); // Populate category details
         if (!service) return res.status(404).json({ message: 'Service not found' });
         res.status(200).json(service);
     } catch (error) {
@@ -82,14 +91,15 @@ exports.getServiceById = async (req, res) => {
 // Update a service
 exports.updateService = async (req, res) => {
     try {
-        const service = await Service.findByIdAndUpdate(req.params.id, req.body, { new: true });
+        const service = await Service.findByIdAndUpdate(req.params.id, req.body, { new: true })
+            .populate('vendor') // Populate vendor details
+            .populate('category'); // Populate category details
         if (!service) return res.status(404).json({ message: 'Service not found' });
         res.status(200).json(service);
     } catch (error) {
         res.status(400).json({ message: error.message });
     }
 };
-
 // Delete a service
 exports.deleteService = async (req, res) => {
     try {
@@ -114,7 +124,9 @@ exports.filterServices = async (req, res) => {
         if (maxPrice) filter.price = { $lte: maxPrice }; // Filter by maximum price
         if (vendor) filter.vendor = vendor; // Filter by vendor
 
-        const services = await Service.find(filter).populate('vendor category'); // Populate category
+        const services = await Service.find(filter)
+            .populate('vendor') // Populate vendor details
+            .populate('category'); // Populate category details
         res.status(200).json(services);
     } catch (error) {
         res.status(400).json({ message: error.message });

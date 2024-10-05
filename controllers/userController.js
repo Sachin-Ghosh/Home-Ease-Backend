@@ -42,37 +42,67 @@ const generateToken = (id) => {
 //     }
 // };
    // Create user
-   exports.createUser = async (req, res) => {
-    const users = req.body; // Expecting an array of users
+//    exports.createUser = async (req, res) => {
+//     const users = req.body; // Expecting an array of users
+
+//     try {
+//         const createdUsers = [];
+//         for (const userData of users) {
+//             const { name, email, password, role } = userData;
+
+//             const userExists = await User.findOne({ email });
+
+//             if (userExists) {
+//                 return res.status(400).json({ message: 'User already exists' });
+//             }
+
+//             const user = await User.create({
+//                 name,
+//                 email,
+//                 password,
+//                 role,
+//             });
+
+//             createdUsers.push({
+//                 _id: user._id,
+//                 name: user.name,
+//                 email: user.email,
+//                 role: user.role,
+//                 token: generateToken(user._id),
+//             });
+//         }
+
+//         res.status(201).json(createdUsers);
+//     } catch (error) {
+//         res.status(500).json({ message: 'Server error', error: error.message });
+//     }
+// };
+
+// Create user
+exports.createUser = async (req, res) => {
+    const { name, email, password, role } = req.body; // Destructure individual fields from req.body
 
     try {
-        const createdUsers = [];
-        for (const userData of users) {
-            const { name, email, password, role } = userData;
+        const userExists = await User.findOne({ email });
 
-            const userExists = await User.findOne({ email });
-
-            if (userExists) {
-                return res.status(400).json({ message: 'User already exists' });
-            }
-
-            const user = await User.create({
-                name,
-                email,
-                password,
-                role,
-            });
-
-            createdUsers.push({
-                _id: user._id,
-                name: user.name,
-                email: user.email,
-                role: user.role,
-                token: generateToken(user._id),
-            });
+        if (userExists) {
+            return res.status(400).json({ message: 'User already exists' });
         }
 
-        res.status(201).json(createdUsers);
+        const user = await User.create({
+            name,
+            email,
+            password,
+            role,
+        });
+
+        res.status(201).json({
+            _id: user._id,
+            name: user.name,
+            email: user.email,
+            role: user.role,
+            token: generateToken(user._id),
+        });
     } catch (error) {
         res.status(500).json({ message: 'Server error', error: error.message });
     }

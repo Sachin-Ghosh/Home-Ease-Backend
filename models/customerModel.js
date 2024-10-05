@@ -14,7 +14,7 @@ const CustomerSchema = new mongoose.Schema({
 });
 
 CustomerSchema.methods.populateData = function() {
-    return this.populate('booking_history').populate('profilePicture'); // Add other fields as necessary
+    return this.populate('booking_history'); // Add other fields as necessary
 };
 
 const Customer = mongoose.model('Customer', CustomerSchema);

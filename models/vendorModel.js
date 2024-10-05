@@ -8,7 +8,6 @@ const VendorSchema = new mongoose.Schema({
         type: { type: String, enum: ['Point'], required: true }, // 'Point' for 2dsphere
         coordinates: { type: [Number], required: true } // [longitude, latitude]
     },
-    availability: { type: Boolean, default: true },
     rating: { type: Number, default: 0 },
     totalReviews: { type: Number, default: 0 }
 });
