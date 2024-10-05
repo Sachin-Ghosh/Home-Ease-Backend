@@ -6,7 +6,7 @@ const multer = require('multer');
 // Set up multer for file uploads
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
-        cb(null, 'uploads/'); // Specify the upload directory
+        cb(null, 'uploads'); // Specify the upload directory
     },
     filename: (req, file, cb) => {
         cb(null, `${Date.now()}-${file.originalname}`); // Create a unique filename
@@ -147,27 +147,30 @@ exports.filterServices = async (req, res) => {
 //         res.status(400).json({ message: error.message });
 //     }
 // };
-exports.createCategory = upload.single('image'), async (req, res) => {
-    try {
-        // Log request body to see if fields are missing
-        console.log("Request Body:", req.body);
+exports.createCategory = [
+    upload.single('image'),
+    async (req, res) => {
+        try {
+            console.log("Request Body:", req.body);
+            console.log("Request File:", req.file);
 
-        // Check if required fields are present
-        if (!req.body.name || !req.body.description) {
-            return res.status(400).json({ message: 'Name and Description are required fields.' });
+            if (!req.body.name || !req.body.description) {
+                return res.status(400).json({ message: 'Name and Description are required fields.' });
+            }
+
+            const categoryData = {
+                name: req.body.name,
+                description: req.body.description,
+                image: req.file ? req.file.path : undefined,
+            };
+            const category = await Category.create(categoryData);
+            res.status(201).json(category);
+        } catch (error) {
+            res.status(400).json({ message: error.message });
         }
-
-        const categoryData = {
-            name: req.body.name,
-            description: req.body.description,
-            image: req.file ? req.file.path : undefined, // Get the uploaded file path
-        };
-        const category = await Category.create(categoryData);
-        res.status(201).json(category);
-    } catch (error) {
-        res.status(400).json({ message: error.message });
     }
-};
+];
+
 
 // exports.createCategory = async (req, res) => {
 //     try {
@@ -232,27 +235,32 @@ exports.getSubCategoryById = async (req, res) => {
 //     }
 // };
    // In controllers/serviceController.js
-   exports.addSubCategory = async (req, res) => {
-    try {
-        const { categoryId, name, description, image } = req.body;
-        const subCategoryData = {
-            name,
-            description,
-            image,
-        };
+   exports.addSubCategory = [
+    upload.single('image'),
+    async (req, res) => {
+        try {
+            const { name, description } = req.body;
+            const categoryId = req.params.id;
 
-        const category = await Category.findByIdAndUpdate(
-            categoryId,
-            { $push: { subCategories: subCategoryData } },
-            { new: true }
-        );
+            const subCategoryData = {
+                name,
+                description,
+                image: req.file ? req.file.path : undefined,
+            };
 
-        if (!category) {
-            return res.status(404).json({ message: 'Category not found' });
+            const category = await Category.findByIdAndUpdate(
+                categoryId,
+                { $push: { subCategories: subCategoryData } },
+                { new: true }
+            );
+
+            if (!category) {
+                return res.status(404).json({ message: 'Category not found' });
+            }
+
+            res.status(201).json(category);
+        } catch (error) {
+            res.status(400).json({ message: error.message });
         }
-
-        res.status(201).json(category);
-    } catch (error) {
-        res.status(400).json({ message: error.message });
     }
-};
+];

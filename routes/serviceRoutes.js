@@ -14,7 +14,7 @@ router.get('/filter', serviceController.filterServices); // Filter services by c
 router.post('/services/category', serviceController.createCategory); // Create a new category
 router.get('/services/categorys', serviceController.getAllCategories); // Get all categories
 router.get('/services/category/:id', serviceController.getCategoryById); // Get a category by ID
-router.post('/services/category/subcategory', serviceController.addSubCategory); // Add a subcategory to a category
+router.post('/services/category/:id/subcategory', serviceController.addSubCategory); // Add a subcategory to a category
 router.get('/services/subcategory/:id', serviceController.getSubCategoryById); // Get a subcategory by ID
 
 module.exports = router;
