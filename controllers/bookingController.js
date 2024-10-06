@@ -105,7 +105,7 @@ exports.getBookingsByVendorId = async (req, res) => {
 
 // Filter bookings based on status and date
 exports.filterBookings = async (req, res) => {
-    const { status, startDate, endDate, customerName, customerId, vendorName, vendorId, serviceId, serviceName, serviceCategory, serviceSubCategory, scheduleId, slot, payment_status } = req.query;
+    const { status, startDate, endDate, customerName, customerId, vendorName, vendorId, serviceId, serviceName, serviceCategory, serviceSubCategory, scheduleId, slot, payment_status, payment_type } = req.query;
 
     // Build a dynamic filter object
     const filter = {};

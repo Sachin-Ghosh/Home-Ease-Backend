@@ -9,6 +9,7 @@ const BookingSchema = new mongoose.Schema({
       startTime: { type: String, required: true },
       endTime: { type: String, required: true },
     },
+  payment_type: { type: String, enum: ["Cash On Delivery", "UPI", "Other"] },
   payment_status: { type: String, default: "Unpaid" },
   status: { type: String, enum: ["Scheduled", "Completed", "Cancelled"], default: "Scheduled" },
   createdAt: { type: Date, default: Date.now },
