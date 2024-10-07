@@ -199,10 +199,10 @@ exports.filterSchedules = async (req, res) => {
 // @route   GET /api/schedules/:vendorId?date=YYYY-MM-DD
 exports.getVendorSlots = async (req, res) => {
     const { vendorId } = req.params;
-    const { date } = req.query;
+    // const { date } = req.query;
 
     try {
-        const schedule = await Schedule.findOne({ vendor: vendorId, 'availableDates.date': new Date(date) }).populate("vendor");
+        const schedule = await Schedule.findOne({ vendor: vendorId }).populate("vendor");
         if (!schedule) {
             return res.status(404).json({ success: false, message: "No slots available for the given date." });
         }
