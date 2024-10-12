@@ -20,6 +20,7 @@ const upload = multer({ storage });
 // Create a new service
 exports.createService = async (req, res) => {
     try {
+        // const photos = req.files.map(file => file.path);
         const serviceData = {
             ...req.body,
             photos: req.body.photos || [],
@@ -418,3 +419,43 @@ exports.getSubCategoryById = async (req, res) => {
         }
     }
 ];
+
+// // Controller function to get services by vendorId
+// exports.getServicesByVendor = async (req, res) => {
+//     const { vendorId } = req.params; // Get vendorId from the request parameters
+  
+//     try {
+//       // Find services that match the vendorId
+//       const services = await Service.find({ vendor: vendorId });
+  
+//       if (!services || services.length === 0) {
+//         return res.status(404).json({ message: 'No services found for this vendor' });
+//       }
+  
+//       res.status(200).json(services);
+//     } catch (error) {
+//       console.error('Error fetching services by vendor:', error);
+//       res.status(500).json({ message: 'Internal server error' });
+//     }
+//   };
+
+  // Get services by vendor ID
+exports.getServicesByVendor = async (req, res) => {
+    try {
+        const { vendorId } = req.params;
+        
+        // if (!mongoose.isValidObjectId(vendorId)) {
+        //     return res.status(400).json({ message: 'Invalid vendor ID' });
+        // }
+
+        const services = await Service.find({ vendor: vendorId })
+            .populate('category')
+            .populate('subcategory');
+
+        // No error if no services found, return an empty array
+        res.status(200).json(services);
+    } catch (error) {
+        console.error("Error fetching services:", error);
+        res.status(500).json({ message: "Internal server error" });
+    }
+};

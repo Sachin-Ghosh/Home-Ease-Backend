@@ -1,14 +1,59 @@
 const Vendor = require('../models/vendorModel');
+const multer = require('multer');
+const path = require('path');
 
-// Create a new vendor
-exports.createVendor = async (req, res) => {
+// Set up multer for file uploads
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        cb(null, 'uploads/'); // Specify the upload directory
+    },
+    filename: (req, file, cb) => {
+        cb(null, `${Date.now()}-${file.originalname}`); // Create a unique filename
+    },
+});
+
+const upload = multer({ storage });
+
+// @desc    Create or update a vendor profile
+// @route   POST /api/vendors
+exports.createOrUpdateVendor = async (req, res) => {
+    const { userId, services, bio, geo_location } = req.body;
+  
     try {
-        const vendor = await Vendor.create(req.body);
-        res.status(201).json(vendor);
-    } catch (error) {
-        res.status(400).json({ message: error.message });
+      // Ensure geolocation is correctly formatted
+      if (!geo_location.lat || !geo_location.lng) {
+        return res.status(400).json({ success: false, message: "Geolocation data is required." });
+      }
+  
+      const location = {
+        type: 'Point',
+        coordinates: [geo_location.lng, geo_location.lat]
+      };
+  
+      let vendor = await Vendor.findOne({ userId });
+  
+      if (vendor) {
+        // Update existing vendor
+        vendor.services = services;
+        vendor.bio = bio;
+        vendor.location = location;
+      } else {
+        // Create a new vendor
+        vendor = new Vendor({
+          userId,
+          services,
+          bio,
+          location
+        });
+      }
+  
+      await vendor.save();
+      res.status(200).json({ success: true, message: "Vendor profile updated successfully", vendor });
+    } catch (err) {
+      console.error(err.message);
+      res.status(500).json({ success: false, message: "Server error" });
     }
-};
+  };
 
 // Get all vendors
 exports.getAllVendors = async (req, res) => {
@@ -85,5 +130,33 @@ exports.getVendorsByAvailability = async (req, res) => {
         res.status(200).json(vendors);
     } catch (error) {
         res.status(400).json({ message: error.message });
+    }
+};
+exports.getVendorByUserId = async (req, res) => {
+    try {
+        const vendor = await Vendor.findOne({ userId: req.params.userId }).populate('userId', 'name email');
+        if (!vendor) return res.status(404).json({ message: 'Vendor not found' });
+        res.status(200).json(vendor);
+    } catch (error) {
+        res.status(400).json({ message: error.message });
+    }
+};
+
+//  Upload profile picture
+exports.uploadProfilePicture = async (req, res) => {
+    try {
+        const vendorId = req.body.vendorId; // Get vendor ID from request body
+        const imageUrl = req.file.path; // Get the uploaded file path
+
+        // Update the vendor with the new profile picture URL
+        const vendor = await Vendor.findByIdAndUpdate(vendorId, { profilePicture: imageUrl }, { new: true });
+
+        if (!vendor) {
+            return res.status(404).json({ message: 'Vendor not found' });
+        }
+
+        res.status(200).json({ message: 'Profile picture uploaded successfully', imageUrl });
+    } catch (error) {
+        res.status(500).json({ message: 'Error uploading profile picture', error: error.message });
     }
 };
