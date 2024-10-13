@@ -17,17 +17,17 @@ const upload = multer({ storage });
 // @desc    Create or update a vendor profile
 // @route   POST /api/vendors
 exports.createOrUpdateVendor = async (req, res) => {
-    const { userId, services, bio, geo_location } = req.body;
+    const { userId, services, bio, location } = req.body; // Adjusted to 'location'
   
     try {
       // Ensure geolocation is correctly formatted
-      if (!geo_location.lat || !geo_location.lng) {
+      if (!location || !location.coordinates || !location.coordinates[0] || !location.coordinates[1]) {
         return res.status(400).json({ success: false, message: "Geolocation data is required." });
       }
   
-      const location = {
+      const vendorLocation = {
         type: 'Point',
-        coordinates: [geo_location.lng, geo_location.lat]
+        coordinates: [location.coordinates[0], location.coordinates[1]] // Adjusted to match your frontend structure
       };
   
       let vendor = await Vendor.findOne({ userId });
@@ -36,14 +36,14 @@ exports.createOrUpdateVendor = async (req, res) => {
         // Update existing vendor
         vendor.services = services;
         vendor.bio = bio;
-        vendor.location = location;
+        vendor.location = vendorLocation;
       } else {
         // Create a new vendor
         vendor = new Vendor({
           userId,
           services,
           bio,
-          location
+          location: vendorLocation
         });
       }
   
@@ -53,7 +53,8 @@ exports.createOrUpdateVendor = async (req, res) => {
       console.error(err.message);
       res.status(500).json({ success: false, message: "Server error" });
     }
-  };
+};
+
 
 // Get all vendors
 exports.getAllVendors = async (req, res) => {

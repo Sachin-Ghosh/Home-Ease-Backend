@@ -96,7 +96,7 @@ exports.getBookingsByCustomerId = async (req, res) => {
 // Get bookings by vendor ID
 exports.getBookingsByVendorId = async (req, res) => {
     try {
-        const bookings = await Booking.find({ vendor: req.params.vendorId }).populate('customer service');
+        const bookings = await Booking.find({ vendor: req.params.vendorId }).populate('customer service customer.userId');
         res.status(200).json(bookings);
     } catch (error) {
         res.status(400).json({ message: error.message });

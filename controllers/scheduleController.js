@@ -215,7 +215,7 @@ exports.getVendorSlots = async (req, res) => {
 
 
 // @desc    Request a time slot calculation for special service
-// @route   POST /api/schedules/request-special-slot
+// @route   POST /api/schedules/
 exports.requestSpecialTimeSlot = async (req, res) => {
     const { vendor, serviceId, startTime, customerId } = req.body; // Added customerId to the request
 

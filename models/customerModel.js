@@ -14,7 +14,11 @@ const CustomerSchema = new mongoose.Schema({
 });
 
 CustomerSchema.methods.populateData = function() {
-    return this.populate('booking_history'); // Add other fields as necessary
+  return this.populate({
+    path: 'userId',        // Populating userId field from User model
+    select: 'name email',  // Select specific fields from the User model if needed
+  }).populate('booking_history');// Add other fields as necessary
+     // Add other fields as necessary
 };
 
 const Customer = mongoose.model('Customer', CustomerSchema);
