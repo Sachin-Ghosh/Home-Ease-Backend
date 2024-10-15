@@ -3,6 +3,8 @@ const Service = require('../models/serviceModel');
 const Category = require('../models/categoryModel'); // Import Category model
 const mongoose = require('mongoose');
 const multer = require('multer');
+const path = require('path');
+const fs = require('fs').promises;
 
 // Set up multer for file uploads
 const storage = multer.diskStorage({
@@ -18,38 +20,74 @@ const upload = multer({ storage });
 
 // Create a new service
 // Create a new service
-exports.createService = async (req, res) => {
-    try {
-        // const photos = req.files.map(file => file.path);
-        const serviceData = {
-            ...req.body,
-            photos: req.body.photos || [],
-        };
+// exports.createService = async (req, res) => {
+//     try {
+//         // const photos = req.files.map(file => file.path);
+//         const serviceData = {
+//             ...req.body,
+//             photos: req.body.photos || [],
+//         };
 
-        // Check if category exists
-        const categoryExists = await Category.findById(req.body.category);
-        if (!categoryExists) return res.status(404).json({ message: "Category not found" });
+//         // Check if category exists
+//         const categoryExists = await Category.findById(req.body.category);
+//         if (!categoryExists) return res.status(404).json({ message: "Category not found" });
 
-        // Check if subcategory exists in the specified category
-        const subCategoryExists = categoryExists.subCategories.id(req.body.subcategory);
-        if (!subCategoryExists) return res.status(404).json({ message: "Subcategory not found in the specified category" });
+//         // Check if subcategory exists in the specified category
+//         const subCategoryExists = categoryExists.subCategories.id(req.body.subcategory);
+//         if (!subCategoryExists) return res.status(404).json({ message: "Subcategory not found in the specified category" });
 
-        // Create the service
-        const service = await Service.create(serviceData);
+//         // Create the service
+//         const service = await Service.create(serviceData);
 
-        // Update the vendor's services array
-        await Vendor.findByIdAndUpdate(
-            req.body.vendor,
-            { $push: { services: service._id } },
-            { new: true }
-        );
+//         // Update the vendor's services array
+//         await Vendor.findByIdAndUpdate(
+//             req.body.vendor,
+//             { $push: { services: service._id } },
+//             { new: true }
+//         );
 
-        res.status(201).json(service);
-    } catch (error) {
-        res.status(400).json({ message: error.message });
+//         res.status(201).json(service);
+//     } catch (error) {
+//         res.status(400).json({ message: error.message });
+//     }
+// };
+
+
+// Create a new service
+exports.createService = [
+    upload.array('photos', 5), // Allow up to 5 photos
+    async (req, res) => {
+        try {
+            const photos = req.files.map(file => file.path);
+            const serviceData = {
+                ...req.body,
+                photos,
+            };
+
+            // Check if category exists
+            const categoryExists = await Category.findById(req.body.category);
+            if (!categoryExists) return res.status(404).json({ message: "Category not found" });
+
+            // Check if subcategory exists in the specified category
+            const subCategoryExists = categoryExists.subCategories.id(req.body.subcategory);
+            if (!subCategoryExists) return res.status(404).json({ message: "Subcategory not found in the specified category" });
+
+            // Create the service
+            const service = await Service.create(serviceData);
+
+            // Update the vendor's services array
+            await Vendor.findByIdAndUpdate(
+                req.body.vendor,
+                { $push: { services: service._id } },
+                { new: true }
+            );
+
+            res.status(201).json(service);
+        } catch (error) {
+            res.status(400).json({ message: error.message });
+        }
     }
-};
-
+];
 
 
 // Create a new service
@@ -112,31 +150,107 @@ exports.getServiceById = async (req, res) => {
 };
 
 // Update a service
-exports.updateService = async (req, res) => {
-    try {
-        const service = await Service.findByIdAndUpdate(req.params.id, req.body, { new: true })
-            .populate('vendor') // Populate vendor details
-            .populate({
-                path: 'category',
-                populate: { path: 'subCategories' }, // Populate all subcategories in the category
-            })
-            .populate('subcategory'); // Populate specific subcategory by its ID in the service
-        if (!service) return res.status(404).json({ message: 'Service not found' });
-        res.status(200).json(service);
-    } catch (error) {
-        res.status(400).json({ message: error.message });
+// exports.updateService = async (req, res) => {
+//     try {
+//         const service = await Service.findByIdAndUpdate(req.params.id, req.body, { new: true })
+//             .populate('vendor') // Populate vendor details
+//             .populate({
+//                 path: 'category',
+//                 populate: { path: 'subCategories' }, // Populate all subcategories in the category
+//             })
+//             .populate('subcategory'); // Populate specific subcategory by its ID in the service
+//         if (!service) return res.status(404).json({ message: 'Service not found' });
+//         res.status(200).json(service);
+//     } catch (error) {
+//         res.status(400).json({ message: error.message });
+//     }
+// };
+exports.updateService = [
+    upload.array('photos', 5), // Allow up to 5 photos
+    async (req, res) => {
+        try {
+            // console.log('Updating service with ID:', req.params.id);
+            // console.log('Request body:', req.body);
+            // console.log('Files:', req.files);
+
+            const serviceId = req.params.id;
+            const updateData = {};
+
+            // Only include fields that are present in the request body
+            const fieldsToUpdate = ['name', 'description', 'price', 'duration', 'category', 'subcategory'];
+            fieldsToUpdate.forEach(field => {
+                if (req.body[field] !== undefined) {
+                    updateData[field] = req.body[field];
+                }
+            });
+
+            // Handle existing photos
+            const existingPhotos = req.body.existingPhotos || [];
+            updateData.photos = Array.isArray(existingPhotos) ? existingPhotos : [existingPhotos];
+
+            // Handle new photos
+            if (req.files && req.files.length > 0) {
+                const newPhotos = req.files.map(file => file.path);
+                updateData.photos = [...updateData.photos, ...newPhotos];
+            }
+
+            // Remove photos that are no longer in the list
+            const service = await Service.findById(serviceId);
+            if (service) {
+                const photosToRemove = service.photos.filter(photo => !updateData.photos.includes(photo));
+                for (const photo of photosToRemove) {
+                    await fs.unlink(photo).catch(err => console.error('Error deleting file:', err));
+                }
+            }
+
+            const updatedService = await Service.findByIdAndUpdate(serviceId, updateData, { new: true, runValidators: true })
+                .populate('vendor')
+                .populate({
+                    path: 'category',
+                    populate: { path: 'subCategories' },
+                })
+                .populate('subcategory');
+
+            if (!updatedService) return res.status(404).json({ message: 'Service not found' });
+            
+            // console.log('Updated service:', updatedService);
+            res.status(200).json(updatedService);
+        } catch (error) {
+            console.error('Error updating service:', error);
+            res.status(400).json({ message: error.message });
+        }
     }
-};
+];
+
+
 // Delete a service
+// exports.deleteService = async (req, res) => {
+//     try {
+//         const service = await Service.findByIdAndDelete(req.params.id);
+//         if (!service) return res.status(404).json({ message: 'Service not found' });
+//         res.status(204).send(); 
+//     } catch (error) {
+//         res.status(400).json({ message: error.message });
+//     }
+// };
 exports.deleteService = async (req, res) => {
     try {
         const service = await Service.findByIdAndDelete(req.params.id);
         if (!service) return res.status(404).json({ message: 'Service not found' });
+
+        // Remove service reference from vendor
+        await Vendor.findByIdAndUpdate(service.vendor, {
+            $pull: { services: service._id }
+        });
+
         res.status(204).send();
     } catch (error) {
         res.status(400).json({ message: error.message });
     }
 };
+
+
+
 
 // // Filter services by category and subcategory
 // exports.filterServices = async (req, res) => {
@@ -306,8 +420,8 @@ exports.createCategory = [
     upload.single('image'),
     async (req, res) => {
         try {
-            console.log("Request Body:", req.body);
-            console.log("Request File:", req.file);
+            // console.log("Request Body:", req.body);
+            // console.log("Request File:", req.file);
 
             if (!req.body.name || !req.body.description) {
                 return res.status(400).json({ message: 'Name and Description are required fields.' });

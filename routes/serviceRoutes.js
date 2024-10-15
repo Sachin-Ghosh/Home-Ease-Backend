@@ -14,7 +14,7 @@ const storage = multer.diskStorage({
 const upload = multer({ storage });
 
 // Service routes
-router.post('/',upload.array('photos'), serviceController.createService);
+router.post('/', serviceController.createService);
 router.get('/', serviceController.getAllServices);
 router.get('/:id', serviceController.getServiceById);
 router.put('/:id', serviceController.updateService);

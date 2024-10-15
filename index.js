@@ -32,9 +32,9 @@ const uploadsDir = path.join(__dirname, 'uploads');
 
 if (!fs.existsSync(uploadsDir)) {
     fs.mkdirSync(uploadsDir, { recursive: true });
-    console.log('Uploads directory created:', uploadsDir);
+    // console.log('Uploads directory created:', uploadsDir);
 } else {
-    console.log('Uploads directory already exists:', uploadsDir);
+    // console.log('Uploads directory already exists:', uploadsDir);
 }
 
 // Middleware 
