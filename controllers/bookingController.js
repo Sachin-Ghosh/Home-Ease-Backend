@@ -2,6 +2,7 @@ const Booking = require('../models/bookingModel');
 const Customer = require('../models/customerModel'); // Import the Customer model
 const Vendor = require('../models/vendorModel'); // Import the Vendor model
 const Service = require('../models/serviceModel'); // Import the Service model
+const Schedule = require('../models/scheduleModel');
 
 // Create a new booking
 exports.createBooking = async (req, res) => {
@@ -173,3 +174,150 @@ exports.filterBookings = async (req, res) => {
         res.status(400).json({ message: error.message });
     }
 };
+
+// Get special bookings by customer ID
+exports.getSpecialBookingsByCustomerId = async (req, res) => {
+    try {
+        const { customerId } = req.params;
+
+        // Find all schedules with special service slots booked by the customer
+        const schedules = await Schedule.find({
+            'specialServiceAvailability.serviceSlots': {
+                $elemMatch: {
+                    isBooked: true,
+                    bookedBy: customerId
+                }
+            }
+        }).populate('vendor');
+
+        // Extract booked special service slots and add service details
+        const specialBookings = await Promise.all(schedules.flatMap(schedule => 
+            schedule.specialServiceAvailability.serviceSlots
+                .filter(slot => slot.isBooked && slot.bookedBy.toString() === customerId)
+                .map(async (slot) => {
+                    // Find the corresponding booking
+                    const booking = await Booking.findOne({
+                        customer: customerId,
+                        vendor: schedule.vendor._id,
+                        'slot.startTime': slot.startTime.toISOString(),
+                        'slot.endTime': slot.endTime.toISOString()
+                    });
+
+                    // Find the service details
+                    const service = booking ? await Service.findById(booking.service[0]) : null;
+
+                    return {
+                        bookingDetails: booking,
+                        slotDetails: {
+                            startTime: slot.startTime,
+                            endTime: slot.endTime,
+                            duration: slot.duration
+                        },
+                        vendorDetails: schedule.vendor,
+                        serviceDetails: service
+                    };
+                })
+        ));
+
+        res.status(200).json({
+            success: true,
+            count: specialBookings.length,
+            data: specialBookings
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: "Server Error",
+            error: error.message
+        });
+    }
+};
+
+
+exports.UpdateVendorLocation = async (req, res) => {
+    try {
+        const { id } = req.params;
+    const { latitude, longitude } = req.body;
+
+    const booking = await Booking.findByIdAndUpdate(
+      id,
+      { 
+        $set: { 
+          'vendorLocation.coordinates': [longitude, latitude],
+          'vendorLocation.timestamp': new Date()
+        }
+      },
+      { new: true }
+    );
+
+    if (!booking) {
+      return res.status(404).json({ message: 'Booking not found' });
+    }
+
+    res.status(200).json({ message: 'Vendor location updated successfully', booking });
+  } catch (error) {
+    console.error('Error updating vendor location:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
+exports.GetVendorLocation = async (req, res) => {
+    try {
+      const { id } = req.params;
+  
+      const booking = await Booking.findById(id).select('vendorLocation');
+  
+      if (!booking) {
+        return res.status(404).json({ message: 'Booking not found' });
+      }
+  
+      res.status(200).json({ vendorLocation: booking.vendorLocation });
+    } catch (error) {
+      console.error('Error retrieving vendor location:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  };
+
+exports.UpdateCustomerLocation = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { latitude, longitude } = req.body;
+    
+        const booking = await Booking.findByIdAndUpdate(
+          id,
+          { 
+            $set: { 
+              'customerLocation.coordinates': [longitude, latitude],
+              'customerLocation.timestamp': new Date()
+            }
+          },
+          { new: true }
+        );
+    
+        if (!booking) {
+          return res.status(404).json({ message: 'Booking not found' });
+        }
+    
+        res.status(200).json({ message: 'Customer location updated successfully', booking });
+      } catch (error) {
+        console.error('Error updating customer location:', error);
+        res.status(500).json({ message: 'Internal server error' });
+      }
+    };
+
+exports.GetCustomerLocation = async (req, res) => {
+    try {
+        const { id } = req.params;
+    
+        const booking = await Booking.findById(id).select('customerLocation');
+    
+        if (!booking) {
+          return res.status(404).json({ message: 'Booking not found' });
+        }
+    
+        res.status(200).json({ customerLocation: booking.customerLocation });
+      } catch (error) {
+        console.error('Error retrieving customer location:', error);
+        res.status(500).json({ message: 'Internal server error' });
+      }
+      };
