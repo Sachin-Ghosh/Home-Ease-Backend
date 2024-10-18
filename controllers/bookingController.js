@@ -234,90 +234,450 @@ exports.getSpecialBookingsByCustomerId = async (req, res) => {
 };
 
 
+// exports.UpdateVendorLocation = async (req, res) => {
+//     try {
+//         const { id } = req.params;
+//     const { latitude, longitude } = req.body;
+
+//     const booking = await Booking.findByIdAndUpdate(
+//       id,
+//       { 
+//         $set: { 
+//           'vendorLocation.coordinates': [longitude, latitude],
+//           'vendorLocation.timestamp': new Date()
+//         }
+//       },
+//       { new: true }
+//     );
+
+//     if (!booking) {
+//       return res.status(404).json({ message: 'Booking not found' });
+//     }
+
+//     res.status(200).json({ message: 'Vendor location updated successfully', booking });
+//   } catch (error) {
+//     console.error('Error updating vendor location:', error);
+//     res.status(500).json({ message: 'Internal server error' });
+//   }
+// };
+
+// exports.GetVendorLocation = async (req, res) => {
+//     try {
+//       const { id } = req.params;
+  
+//       const booking = await Booking.findById(id).select('vendorLocation');
+  
+//       if (!booking) {
+//         return res.status(404).json({ message: 'Booking not found' });
+//       }
+  
+//       res.status(200).json({ vendorLocation: booking.vendorLocation });
+//     } catch (error) {
+//       console.error('Error retrieving vendor location:', error);
+//       res.status(500).json({ message: 'Internal server error' });
+//     }
+//   };
+
+// exports.UpdateCustomerLocation = async (req, res) => {
+//     try {
+//         const { id } = req.params;
+//         const { latitude, longitude } = req.body;
+    
+//         const booking = await Booking.findByIdAndUpdate(
+//           id,
+//           { 
+//             $set: { 
+//               'customerLocation.coordinates': [longitude, latitude],
+//               'customerLocation.timestamp': new Date()
+//             }
+//           },
+//           { new: true }
+//         );
+    
+//         if (!booking) {
+//           return res.status(404).json({ message: 'Booking not found' });
+//         }
+    
+//         res.status(200).json({ message: 'Customer location updated successfully', booking });
+//       } catch (error) {
+//         console.error('Error updating customer location:', error);
+//         res.status(500).json({ message: 'Internal server error' });
+//       }
+//     };
+
+// exports.GetCustomerLocation = async (req, res) => {
+//     try {
+//         const { id } = req.params;
+    
+//         const booking = await Booking.findById(id).select('customerLocation');
+    
+//         if (!booking) {
+//           return res.status(404).json({ message: 'Booking not found' });
+//         }
+    
+//         res.status(200).json({ customerLocation: booking.customerLocation });
+//       } catch (error) {
+//         console.error('Error retrieving customer location:', error);
+//         res.status(500).json({ message: 'Internal server error' });
+//       }
+//       };
+
+
+// Update vendor location
 exports.UpdateVendorLocation = async (req, res) => {
     try {
-        const { id } = req.params;
-    const { latitude, longitude } = req.body;
-
-    const booking = await Booking.findByIdAndUpdate(
-      id,
-      { 
-        $set: { 
-          'vendorLocation.coordinates': [longitude, latitude],
-          'vendorLocation.timestamp': new Date()
-        }
-      },
-      { new: true }
-    );
-
-    if (!booking) {
-      return res.status(404).json({ message: 'Booking not found' });
+      const { id } = req.params;
+      const { latitude, longitude } = req.body;
+  
+      const booking = await Booking.findById(id);
+      if (!booking) {
+        return res.status(404).json({ message: 'Booking not found' });
+      }
+  
+      // Update current location
+      const updatedBooking = await Booking.findByIdAndUpdate(
+        id,
+        {
+          $set: {
+            'vendorLocation.coordinates': [longitude, latitude],
+            'vendorLocation.timestamp': new Date()
+          },
+          $push: {
+            locationHistory: {
+              actor: 'vendor',
+              coordinates: [longitude, latitude],
+              timestamp: new Date()
+            }
+          }
+        },
+        { new: true, select: '+vendorLocation +locationHistory' }
+      );
+  
+      // Calculate distance from customer if customer location exists
+      let distance = null;
+      if (updatedBooking.customerLocation && updatedBooking.customerLocation.coordinates[0] !== 0) {
+        const customerCoords = updatedBooking.customerLocation.coordinates;
+        distance = calculateDistance(
+          [longitude, latitude],
+          customerCoords
+        );
+      }
+  
+      res.status(200).json({
+        message: 'Vendor location updated successfully',
+        location: updatedBooking.vendorLocation,
+        distanceToCustomer: distance ? `${distance.toFixed(2)} km` : null
+      });
+    } catch (error) {
+      console.error('Error updating vendor location:', error);
+      res.status(500).json({ message: 'Internal server error' });
     }
+  };
+  
+//   // Update customer location
+//   exports.UpdateCustomerLocation = async (req, res) => {
+//     try {
+//       const { id } = req.params;
+//       const { latitude, longitude } = req.body;
+  
+//       const booking = await Booking.findById(id);
+//       if (!booking) {
+//         return res.status(404).json({ message: 'Booking not found' });
+//       }
+  
+//       // Update current location
+//       const updatedBooking = await Booking.findByIdAndUpdate(
+//         id,
+//         {
+//           $set: {
+//             'customerLocation.coordinates': [longitude, latitude],
+//             'customerLocation.timestamp': new Date()
+//           },
+//           $push: {
+//             locationHistory: {
+//               actor: 'customer',
+//               coordinates: [longitude, latitude],
+//               timestamp: new Date()
+//             }
+//           }
+//         },
+//         { new: true, select: '+customerLocation +locationHistory' }
+//       );
+  
+//       // Calculate distance from vendor if vendor location exists
+//       let distance = null;
+//       if (updatedBooking.vendorLocation && updatedBooking.vendorLocation.coordinates[0] !== 0) {
+//         const vendorCoords = updatedBooking.vendorLocation.coordinates;
+//         distance = calculateDistance(
+//           [longitude, latitude],
+//           vendorCoords
+//         );
+//       }
+  
+//       res.status(200).json({
+//         message: 'Customer location updated successfully',
+//         location: updatedBooking.customerLocation,
+//         distanceToVendor: distance ? `${distance.toFixed(2)} km` : null
+//       });
+//     } catch (error) {
+//       console.error('Error updating customer location:', error);
+//       res.status(500).json({ message: 'Internal server error' });
+//     }
+//   };
+  
+//   // Get vendor location
+//   exports.GetVendorLocation = async (req, res) => {
+//     try {
+//       const { id } = req.params;
+  
+//       const booking = await Booking.findById(id)
+//         .select('+vendorLocation +locationHistory');
+  
+//       if (!booking) {
+//         return res.status(404).json({ message: 'Booking not found' });
+//       }
+  
+//       // Get latest vendor location from history
+//       const latestLocation = booking.locationHistory
+//         .filter(loc => loc.actor === 'vendor')
+//         .sort((a, b) => b.timestamp - a.timestamp)[0];
+  
+//       res.status(200).json({
+//         currentLocation: booking.vendorLocation,
+//         lastUpdated: booking.vendorLocation.timestamp,
+//         locationHistory: booking.locationHistory.filter(loc => loc.actor === 'vendor')
+//       });
+//     } catch (error) {
+//       console.error('Error retrieving vendor location:', error);
+//       res.status(500).json({ message: 'Internal server error' });
+//     }
+//   };
+  
+//   // Get customer location
+//   exports.GetCustomerLocation = async (req, res) => {
+//     try {
+//       const { id } = req.params;
+  
+//       const booking = await Booking.findById(id)
+//         .select('+customerLocation +locationHistory');
+  
+//       if (!booking) {
+//         return res.status(404).json({ message: 'Booking not found' });
+//       }
+  
+//       // Get latest customer location from history
+//       const latestLocation = booking.locationHistory
+//         .filter(loc => loc.actor === 'customer')
+//         .sort((a, b) => b.timestamp - a.timestamp)[0];
+  
+//       res.status(200).json({
+//         currentLocation: booking.customerLocation,
+//         lastUpdated: booking.customerLocation.timestamp,
+//         locationHistory: booking.locationHistory.filter(loc => loc.actor === 'customer')
+//       });
+//     } catch (error) {
+//       console.error('Error retrieving customer location:', error);
+//       res.status(500).json({ message: 'Internal server error' });
+//     }
+//   };
+  
+//   // Helper function to calculate distance between two points using Haversine formula
+//   function calculateDistance(coords1, coords2) {
+//     const [lon1, lat1] = coords1;
+//     const [lon2, lat2] = coords2;
+    
+//     const R = 6371; // Radius of the earth in km
+//     const dLat = deg2rad(lat2 - lat1);
+//     const dLon = deg2rad(lon2 - lon1);
+    
+//     const a = 
+//       Math.sin(dLat/2) * Math.sin(dLat/2) +
+//       Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) * 
+//       Math.sin(dLon/2) * Math.sin(dLon/2);
+    
+//     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+//     const distance = R * c; // Distance in km
+    
+//     return distance;
+//   }
+  
+//   function deg2rad(deg) {
+//     return deg * (Math.PI/180);
+//   }
 
-    res.status(200).json({ message: 'Vendor location updated successfully', booking });
-  } catch (error) {
-    console.error('Error updating vendor location:', error);
-    res.status(500).json({ message: 'Internal server error' });
-  }
-};
 
+// Get vendor location
 exports.GetVendorLocation = async (req, res) => {
     try {
       const { id } = req.params;
   
-      const booking = await Booking.findById(id).select('vendorLocation');
+      const booking = await Booking.findById(id)
+        .select('+vendorLocation +locationHistory');
   
       if (!booking) {
         return res.status(404).json({ message: 'Booking not found' });
       }
   
-      res.status(200).json({ vendorLocation: booking.vendorLocation });
+      // Get latest vendor location from history
+      const vendorHistory = booking.locationHistory?.filter(loc => loc.actor === 'vendor') || [];
+      const latestLocation = vendorHistory.sort((a, b) => b.timestamp - a.timestamp)[0];
+  
+      // Handle case where vendorLocation might not exist
+      const currentLocation = booking.vendorLocation || {
+        coordinates: [0, 0],
+        timestamp: null
+      };
+  
+      res.status(200).json({
+        currentLocation,
+        lastUpdated: currentLocation.timestamp,
+        locationHistory: vendorHistory
+      });
     } catch (error) {
       console.error('Error retrieving vendor location:', error);
       res.status(500).json({ message: 'Internal server error' });
     }
   };
-
-exports.UpdateCustomerLocation = async (req, res) => {
+  
+  // Get customer location
+  exports.GetCustomerLocation = async (req, res) => {
     try {
-        const { id } = req.params;
-        const { latitude, longitude } = req.body;
-    
-        const booking = await Booking.findByIdAndUpdate(
-          id,
-          { 
-            $set: { 
-              'customerLocation.coordinates': [longitude, latitude],
-              'customerLocation.timestamp': new Date()
+      const { id } = req.params;
+  
+      const booking = await Booking.findById(id)
+        .select('+customerLocation +locationHistory');
+  
+      if (!booking) {
+        return res.status(404).json({ message: 'Booking not found' });
+      }
+  
+      // Get latest customer location from history
+      const customerHistory = booking.locationHistory?.filter(loc => loc.actor === 'customer') || [];
+      const latestLocation = customerHistory.sort((a, b) => b.timestamp - a.timestamp)[0];
+  
+      // Handle case where customerLocation might not exist
+      const currentLocation = booking.customerLocation || {
+        coordinates: [0, 0],
+        timestamp: null
+      };
+  
+      res.status(200).json({
+        currentLocation,
+        lastUpdated: currentLocation.timestamp,
+        locationHistory: customerHistory
+      });
+    } catch (error) {
+      console.error('Error retrieving customer location:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  };
+  
+//   // Update vendor location
+//   exports.UpdateVendorLocation = async (req, res) => {
+//     try {
+//       const { id } = req.params;
+//       const { latitude, longitude } = req.body;
+  
+//       const booking = await Booking.findById(id);
+//       if (!booking) {
+//         return res.status(404).json({ message: 'Booking not found' });
+//       }
+  
+//       const timestamp = new Date();
+      
+//       // Update current location
+//       const updatedBooking = await Booking.findByIdAndUpdate(
+//         id,
+//         {
+//           $set: {
+//             vendorLocation: {
+//               coordinates: [longitude, latitude],
+//               timestamp
+//             }
+//           },
+//           $push: {
+//             locationHistory: {
+//               actor: 'vendor',
+//               coordinates: [longitude, latitude],
+//               timestamp
+//             }
+//           }
+//         },
+//         { new: true, select: '+vendorLocation +locationHistory' }
+//       );
+  
+//       // Calculate distance from customer if customer location exists
+//       let distance = null;
+//       if (updatedBooking.customerLocation?.coordinates?.[0] !== 0) {
+//         const customerCoords = updatedBooking.customerLocation.coordinates;
+//         distance = calculateDistance(
+//           [longitude, latitude],
+//           customerCoords
+//         );
+//       }
+  
+//       res.status(200).json({
+//         message: 'Vendor location updated successfully',
+//         location: updatedBooking.vendorLocation,
+//         distanceToCustomer: distance ? `${distance.toFixed(2)} km` : null
+//       });
+//     } catch (error) {
+//       console.error('Error updating vendor location:', error);
+//       res.status(500).json({ message: 'Internal server error' });
+//     }
+//   };
+  
+  // Update customer location
+  exports.UpdateCustomerLocation = async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { latitude, longitude } = req.body;
+  
+      const booking = await Booking.findById(id);
+      if (!booking) {
+        return res.status(404).json({ message: 'Booking not found' });
+      }
+  
+      const timestamp = new Date();
+  
+      // Update current location
+      const updatedBooking = await Booking.findByIdAndUpdate(
+        id,
+        {
+          $set: {
+            customerLocation: {
+              coordinates: [longitude, latitude],
+              timestamp
             }
           },
-          { new: true }
+          $push: {
+            locationHistory: {
+              actor: 'customer',
+              coordinates: [longitude, latitude],
+              timestamp
+            }
+          }
+        },
+        { new: true, select: '+customerLocation +locationHistory' }
+      );
+  
+      // Calculate distance from vendor if vendor location exists
+      let distance = null;
+      if (updatedBooking.vendorLocation?.coordinates?.[0] !== 0) {
+        const vendorCoords = updatedBooking.vendorLocation.coordinates;
+        distance = calculateDistance(
+          [longitude, latitude],
+          vendorCoords
         );
-    
-        if (!booking) {
-          return res.status(404).json({ message: 'Booking not found' });
-        }
-    
-        res.status(200).json({ message: 'Customer location updated successfully', booking });
-      } catch (error) {
-        console.error('Error updating customer location:', error);
-        res.status(500).json({ message: 'Internal server error' });
       }
-    };
-
-exports.GetCustomerLocation = async (req, res) => {
-    try {
-        const { id } = req.params;
-    
-        const booking = await Booking.findById(id).select('customerLocation');
-    
-        if (!booking) {
-          return res.status(404).json({ message: 'Booking not found' });
-        }
-    
-        res.status(200).json({ customerLocation: booking.customerLocation });
-      } catch (error) {
-        console.error('Error retrieving customer location:', error);
-        res.status(500).json({ message: 'Internal server error' });
-      }
-      };
+  
+      res.status(200).json({
+        message: 'Customer location updated successfully',
+        location: updatedBooking.customerLocation,
+        distanceToVendor: distance ? `${distance.toFixed(2)} km` : null
+      });
+    } catch (error) {
+      console.error('Error updating customer location:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  };
