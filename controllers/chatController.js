@@ -1,45 +1,85 @@
+// controllers/chatController.js
 const Chat = require('../models/chatModel');
 
-// Create a new chat
-exports.createChat = async (req, res) => {
+// Initialize a chat
+exports.initializeChat = async (req, res) => {
     try {
-        const chat = await Chat.create(req.body);
+        // Check if chat already exists for this booking
+        const existingChat = await Chat.findOne({ 
+            bookingId: req.body.bookingId 
+        });
+
+        if (existingChat) {
+            return res.status(200).json(existingChat);
+        }
+
+        // Create new chat
+        const chat = await Chat.create({
+            bookingId: req.body.bookingId,
+            customerId: req.body.customerId,
+            vendorId: req.body.vendorId
+        });
+
         res.status(201).json(chat);
     } catch (error) {
         res.status(400).json({ message: error.message });
     }
 };
 
-// Get chat by booking ID
-exports.getChatByBookingId = async (req, res) => {
+// Get all chats for a vendor
+exports.getVendorChats = async (req, res) => {
     try {
-        const chat = await Chat.findOne({ bookingId: req.params.bookingId });
-        if (!chat) return res.status(404).json({ message: 'Chat not found' });
-        res.status(200).json(chat);
+        const chats = await Chat.find({ 
+            vendorId: req.params.vendorId,
+            status: 'active'
+        })
+        .sort({ lastMessage: -1 })
+        .populate('customerId', 'name profileImage') // Adjust fields as needed
+        .populate('bookingId', 'serviceDetails date') // Adjust fields as needed
+        .exec();
+
+        res.status(200).json(chats);
     } catch (error) {
         res.status(400).json({ message: error.message });
     }
 };
 
-// Add a message to a chat
+// Get all chats for a customer
+exports.getCustomerChats = async (req, res) => {
+    try {
+        const chats = await Chat.find({ 
+            customerId: req.params.customerId,
+            status: 'active'
+        })
+        .sort({ lastMessage: -1 })
+        .populate('vendorId', 'name profileImage') // Adjust fields as needed
+        .populate('bookingId', 'serviceDetails date') // Adjust fields as needed
+        .exec();
+
+        res.status(200).json(chats);
+    } catch (error) {
+        res.status(400).json({ message: error.message });
+    }
+};
+
+// Add message to chat
 exports.addMessageToChat = async (req, res) => {
     try {
-        const chat = await Chat.findById(req.params.id); // Find chat by ID
+        const chat = await Chat.findById(req.params.id);
         if (!chat) return res.status(404).json({ message: 'Chat not found' });
         
-        // Create a new message object with optional fields
         const newMessage = {
             sender: req.body.sender,
             message: req.body.message,
-            imageUrl: req.body.imageUrl || null, // Handle optional image URL
-            location: req.body.location || null, // Handle optional location
+            imageUrl: req.body.imageUrl || null,
+            location: req.body.location || null,
         };
 
-        // Push the new message to the messages array
-        chat.messages.push(newMessage); // Add the message from the request body
-        await chat.save(); // Save the updated chat
+        chat.messages.push(newMessage);
+        chat.lastMessage = Date.now(); // Update last message timestamp
+        await chat.save();
         
-        res.status(200).json(chat); // Return the updated chat
+        res.status(200).json(chat);
     } catch (error) {
         res.status(400).json({ message: error.message });
     }
