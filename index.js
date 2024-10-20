@@ -1,4 +1,6 @@
 var express = require('express');
+const http = require('http');
+const WebSocket = require('ws');
 const cors = require('cors');
 const path = require('path');
 const fs = require('fs');
@@ -8,6 +10,61 @@ require('dotenv').config(); // Load environment variables from .env file
 
 // Import the cron job module
 require('./cronJob');
+
+
+
+const server = http.createServer(app);
+
+// Initialize WebSocket server
+const wss = new WebSocket.Server({ server });
+
+// Store active connections
+const clients = new Map();
+
+// WebSocket connection handler
+wss.on('connection', (ws, req) => {
+  const clientId = req.url.split('?')[1]; // Get client ID from URL params
+  
+  // Store client connection
+  clients.set(clientId, ws);
+  
+  console.log(`Client connected: ${clientId}`);
+
+  // Handle incoming messages
+  ws.on('message', (message) => {
+    try {
+      const data = JSON.parse(message);
+      // Broadcast message to all clients in the same chat
+      broadcastMessage(data);
+    } catch (error) {
+      console.error('WebSocket message error:', error);
+    }
+  });
+
+  // Handle client disconnection
+  ws.on('close', () => {
+    clients.delete(clientId);
+    console.log(`Client disconnected: ${clientId}`);
+  });
+
+  // Handle errors
+  ws.on('error', (error) => {
+    console.error('WebSocket error:', error);
+    clients.delete(clientId);
+  });
+});
+
+// Broadcast message to all clients in the same chat
+function broadcastMessage(data) {
+  const { chatId, message } = data;
+  
+  clients.forEach((client) => {
+    if (client.readyState === WebSocket.OPEN) {
+      client.send(JSON.stringify({ chatId, message }));
+    }
+  });
+}
+
 
 // Import route files
 const userRoutes = require('./routes/userRoutes');
