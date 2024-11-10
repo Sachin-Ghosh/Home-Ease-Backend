@@ -2,30 +2,7 @@
 const Chat = require('../models/chatModel');
 const mongoose = require('mongoose');
 
-// Initialize a chat
-// exports.initializeChat = async (req, res) => {
-//     try {
-//         // Check if chat already exists for this booking
-//         const existingChat = await Chat.findOne({ 
-//             bookingId: req.body.bookingId 
-//         });
 
-//         if (existingChat) {
-//             return res.status(200).json(existingChat);
-//         }
-
-//         // Create new chat
-//         const chat = await Chat.create({
-//             bookingId: req.body.bookingId,
-//             customerId: req.body.customerId,
-//             vendorId: req.body.vendorId
-//         });
-
-//         res.status(201).json(chat);
-//     } catch (error) {
-//         res.status(400).json({ message: error.message });
-//     }
-// };
 
 exports.initializeChat = async (req, res) => {
     try {
